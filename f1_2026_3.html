@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 2026 - Wyniki i Kalendarz</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc0000 0%, #000000 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 3em; margin-bottom: 10px; letter-spacing: 2px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 40px; }
+        .section { background: #f9f9f9; border-radius: 10px; padding: 25px; border: 2px solid #e0e0e0; }
+        .section h2 { color: #dc0000; margin-bottom: 20px; font-size: 1.8em; border-bottom: 3px solid #dc0000; padding-bottom: 10px; }
+        .races-list { display: flex; flex-direction: column; gap: 15px; max-height: 600px; overflow-y: auto; }
+        .race-item {
+            background: white; border-left: 5px solid #ddd; padding: 15px; border-radius: 8px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .race-item:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); }
+        .race-item.completed { border-left-color: #4caf50; background: linear-gradient(90deg, rgba(76, 175, 80, 0.05) 0%, white 100%); }
+        .race-item.completed::before { content: '✓'; color: #4caf50; font-weight: bold; font-size: 1.2em; margin-right: 10px; }
+        .race-item.upcoming { border-left-color: #2196f3; }
+        .race-date { font-size: 0.9em; color: #666; margin-top: 5px; }
+        .race-name { font-weight: bold; font-size: 1.1em; color: #333; display: flex; align-items: center; gap: 10px; }
+        .event-badge { display: inline-block; font-size: 0.7em; padding: 3px 8px; border-radius: 3px; font-weight: bold; white-space: nowrap; margin-left: auto; }
+        .event-badge.qual { background: #ffc107; color: #333; }
+        .event-badge.sprint { background: #ff5722; color: white; }
+        .event-badge.race { background: #2196f3; color: white; }
+        .results-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .results-modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 15px; padding: 40px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 28px; cursor: pointer; color: #666; background: none; border: none; }
+        .close-modal:hover { color: #dc0000; }
+        .modal-title { color: #dc0000; font-size: 1.8em; margin-bottom: 25px; border-bottom: 3px solid #dc0000; padding-bottom: 10px; }
+        .session-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .session-tab { background: #e0e0e0; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .session-tab.active { background: #dc0000; color: white; }
+        .session-content { display: none; }
+        .session-content.active { display: block; }
+        .podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .podium-position { background: white; border-radius: 10px; padding: 20px; text-align: center; border: 3px solid #ddd; position: relative; }
+        .podium-position.first { border-color: #ffd700; background: linear-gradient(135deg, #ffd700 0%, rgba(255, 215, 0, 0.1) 100%); order: 2; margin-top: -20px; }
+        .podium-position.second { border-color: #c0c0c0; background: linear-gradient(135deg, #c0c0c0 0%, rgba(192, 192, 192, 0.1) 100%); order: 1; }
+        .podium-position.third { border-color: #cd7f32; background: linear-gradient(135deg, #cd7f32 0%, rgba(205, 127, 50, 0.1) 100%); order: 3; }
+        .medal { font-size: 2.5em; margin-bottom: 10px; }
+        .position-number { font-size: 2.5em; font-weight: bold; color: #dc0000; margin-bottom: 10px; }
+        .driver-name { font-weight: bold; font-size: 1.1em; color: #333; margin-bottom: 5px; }
+        .team-name { font-size: 0.9em; color: #666; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 15px; }
+        .results-table th { background: #f0f0f0; padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #ddd; }
+        .results-table td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; }
+        .results-table tr:hover { background: #f9f9f9; }
+        .dnf-cell { background: #ffebee; color: #c62828; font-weight: bold; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: #e0e0e0; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .tab-btn.active { background: #dc0000; color: white; }
+        .standings-table { width: 100%; border-collapse: collapse; }
+        .standings-table th, .standings-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        .standings-table th { background: #f0f0f0; font-weight: bold; color: #333; }
+        .standings-table tr:hover { background: #f9f9f9; }
+        .points { font-weight: bold; color: #dc0000; }
+        @media (max-width: 768px) { .content { grid-template-columns: 1fr; } .header h1 { font-size: 2em; } .podium { grid-template-columns: 1fr; } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #dc0000; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏎️ FORMULA 1 2026</h1>
+            <p>Wyniki, Kwalifikacje i Kalendarz Sezonu</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>📅 Kalendarz</h2>
+                <div class="races-list" id="racesList"></div>
+            </div>
+
+            <div class="section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab(event, 'results')">Ostatnie Wyniki</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'standings')">Klasyfikacja</button>
+                </div>
+                <div id="resultsTab"><div id="latestResults"></div></div>
+                <div id="standingsTab" style="display: none;"><table class="standings-table" id="standingsTable"></table></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-modal" id="resultsModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="session-tabs" id="sessionTabs"></div>
+            <div id="qualSession" class="session-content"><table class="results-table" id="qualTable"></table></div>
+            <div id="raceSession" class="session-content"><div class="podium" id="racePodium"></div><table class="results-table" id="raceTable"></table></div>
+        </div>
+    </div>
+
+    <script>
+        const races = [
+            {
+                id: 1, round: 1, name: 'Grand Prix Australii', location: 'Melbourne',
+                date: '2026-03-08', dateRange: '6-8 marca', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:17.098' },
+                        { pos: 2, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.456' },
+                        { pos: 3, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+0.623' },
+                        { pos: 4, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.891' },
+                        { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', time: '+1.234' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+1.456' },
+                        { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.678' },
+                        { pos: 8, driver: 'Isack Hadjar', team: 'Red Bull', time: '+1.912' },
+                        { pos: 9, driver: 'Pierre Gasly', team: 'Alpine', time: '+2.123' },
+                        { pos: 10, driver: 'Ollie Bearman', team: 'Haas', time: '+2.345' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:23:47.892' },
+                        { pos: 2, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+2.974' },
+                        { pos: 3, driver: 'Charles Leclerc', team: 'Ferrari', time: '+15.519' },
+                        { pos: 4, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+16.144' },
+                        { pos: 5, driver: 'Lando Norris', team: 'McLaren', time: '+51.741' },
+                        { pos: 6, driver: 'Max Verstappen', team: 'Red Bull', time: '+54.617' },
+                        { pos: 7, driver: 'Ollie Bearman', team: 'Haas', time: '+1 lap' },
+                        { pos: 8, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1 lap' },
+                        { pos: 'DNF', driver: 'Isack Hadjar', team: 'Red Bull', time: 'Awaria' },
+                        { pos: 'DNS', driver: 'Oscar Piastri', team: 'McLaren', time: 'Wypadek' }
+                    ]
+                }
+            },
+            {
+                id: 2, round: 2, name: 'Grand Prix Chin', location: 'Shanghai',
+                date: '2026-03-15', dateRange: '13-15 marca', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:32.064' },
+                        { pos: 2, driver: 'George Russell', team: 'Mercedes', time: '+0.222' },
+                        { pos: 3, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.351' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.445' },
+                        { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.612' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+0.823' },
+                        { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.034' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.245' },
+                        { pos: 9, driver: 'Isack Hadjar', team: 'Red Bull', time: '+1.456' },
+                        { pos: 10, driver: 'Ollie Bearman', team: 'Haas', time: '+1.678' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:33:15.607' },
+                        { pos: 2, driver: 'George Russell', team: 'Mercedes', time: '+5.515' },
+                        { pos: 3, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+25.267' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+35.432' },
+                        { pos: 5, driver: 'Ollie Bearman', team: 'Haas', time: '+52.345' },
+                        { pos: 6, driver: 'Pierre Gasly', team: 'Alpine', time: '+1 lap' },
+                        { pos: 7, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1 lap' },
+                        { pos: 8, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+1 lap' },
+                        { pos: 'DNS', driver: 'Lando Norris', team: 'McLaren', time: 'Awaria' },
+                        { pos: 'DNS', driver: 'Oscar Piastri', team: 'McLaren', time: 'Awaria' }
+                    ]
+                }
+            },
+            {
+                id: 3, round: 3, name: 'Grand Prix Japonii', location: 'Suzuka',
+                date: '2026-03-29', dateRange: '27-29 marca', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:28.567' },
+                        { pos: 2, driver: 'George Russell', team: 'Mercedes', time: '+0.289' },
+                        { pos: 3, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.512' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.734' },
+                        { pos: 5, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.945' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+1.167' },
+                        { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.389' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.612' },
+                        { pos: 9, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+1.834' },
+                        { pos: 10, driver: 'Isack Hadjar', team: 'Red Bull', time: '+2.056' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:28:03.403' },
+                        { pos: 2, driver: 'Oscar Piastri', team: 'McLaren', time: '+13.722' },
+                        { pos: 3, driver: 'Charles Leclerc', team: 'Ferrari', time: '+15.270' },
+                        { pos: 4, driver: 'George Russell', team: 'Mercedes', time: '+15.754' },
+                        { pos: 5, driver: 'Lando Norris', team: 'McLaren', time: '+23.479' },
+                        { pos: 6, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+25.037' },
+                        { pos: 7, driver: 'Pierre Gasly', team: 'Alpine', time: '+32.340' },
+                        { pos: 8, driver: 'Max Verstappen', team: 'Red Bull', time: '+32.677' },
+                        { pos: 'DNF', driver: 'Oliver Bearman', team: 'Haas', time: 'Wypadek' },
+                        { pos: 'DNF', driver: 'Lance Stroll', team: 'Aston Martin', time: 'Awaria' }
+                    ]
+                }
+            },
+            {
+                id: 4, round: 4, name: 'Grand Prix Miami', location: 'Miami',
+                date: '2026-05-03', dateRange: '1-3 maja', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:27.798' },
+                        { pos: 2, driver: 'Max Verstappen', team: 'Red Bull', time: '+0.166' },
+                        { pos: 3, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.234' },
+                        { pos: 4, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.445' },
+                        { pos: 5, driver: 'Lando Norris', team: 'McLaren', time: '+0.612' },
+                        { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.789' },
+                        { pos: 7, driver: 'George Russell', team: 'Mercedes', time: '+0.912' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.234' },
+                        { pos: 9, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+1.567' },
+                        { pos: 10, driver: 'Ollie Bearman', team: 'Haas', time: '+1.789' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:33:19.273' },
+                        { pos: 2, driver: 'Lando Norris', team: 'McLaren', time: '+3.264' },
+                        { pos: 3, driver: 'Oscar Piastri', team: 'McLaren', time: '+27.092' },
+                        { pos: 4, driver: 'Max Verstappen', team: 'Red Bull', time: '+35.123' },
+                        { pos: 5, driver: 'George Russell', team: 'Mercedes', time: '+42.456' },
+                        { pos: 6, driver: 'Charles Leclerc', team: 'Ferrari', time: '+51.789' },
+                        { pos: 7, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+1:02.345' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1 lap' },
+                        { pos: 'DNF', driver: 'Fernando Alonso', team: 'Aston Martin', time: 'Hydraulika' },
+                        { pos: 'DNF', driver: 'Lance Stroll', team: 'Aston Martin', time: 'Wypadek' }
+                    ]
+                }
+            },
+            {
+                id: 5, round: 5, name: 'Grand Prix Kanady', location: 'Montreal',
+                date: '2026-05-24', dateRange: '22-24 maja', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:12.345' },
+                        { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.234' },
+                        { pos: 3, driver: 'George Russell', team: 'Mercedes', time: '+0.567' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.789' },
+                        { pos: 5, driver: 'Max Verstappen', team: 'Red Bull', time: '+0.945' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+1.123' },
+                        { pos: 7, driver: 'Oscar Piastri', team: 'McLaren', time: '+1.345' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.567' },
+                        { pos: 9, driver: 'Isack Hadjar', team: 'Red Bull', time: '+1.789' },
+                        { pos: 10, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+2.012' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:28:15.758' },
+                        { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+10.768' },
+                        { pos: 3, driver: 'Max Verstappen', team: 'Red Bull', time: '+11.276' },
+                        { pos: 4, driver: 'George Russell', team: 'Mercedes', time: '+18.123' },
+                        { pos: 5, driver: 'Charles Leclerc', team: 'Ferrari', time: '+25.456' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+32.789' },
+                        { pos: 7, driver: 'Oscar Piastri', team: 'McLaren', time: '+40.234' },
+                        { pos: 8, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+1 lap' },
+                        { pos: 'DNF', driver: 'Pierre Gasly', team: 'Alpine', time: 'Wypadek' },
+                        { pos: 'DNF', driver: 'Lance Stroll', team: 'Aston Martin', time: 'Transmission' }
+                    ]
+                }
+            },
+            {
+                id: 6, round: 6, name: 'Grand Prix Monako', location: 'Monte Carlo',
+                date: '2026-06-07', dateRange: '4-7 czerwca', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '1:10.234' },
+                        { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.123' },
+                        { pos: 3, driver: 'George Russell', team: 'Mercedes', time: '+0.456' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.678' },
+                        { pos: 5, driver: 'Lando Norris', team: 'McLaren', time: '+0.912' },
+                        { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', time: '+1.134' },
+                        { pos: 7, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.345' },
+                        { pos: 8, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.567' },
+                        { pos: 9, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+1.789' },
+                        { pos: 10, driver: 'Isack Hadjar', team: 'Red Bull', time: '+2.012' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', time: '2:23:31.243' },
+                        { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+6.271' },
+                        { pos: 3, driver: 'Pierre Gasly', team: 'Alpine', time: '+20.369' },
+                        { pos: 4, driver: 'George Russell', team: 'Mercedes', time: '+28.456' },
+                        { pos: 5, driver: 'Charles Leclerc', team: 'Ferrari', time: '+35.123' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+42.789' },
+                        { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', time: '+51.234' },
+                        { pos: 8, driver: 'Oscar Piastri', team: 'McLaren', time: '+1 lap' },
+                        { pos: 'DNF', driver: 'Fernando Alonso', team: 'Aston Martin', time: 'Suspension' },
+                        { pos: 'DNF', driver: 'Lance Stroll', team: 'Aston Martin', time: 'Wypadek' }
+                    ]
+                }
+            },
+            {
+                id: 7, round: 7, name: 'Grand Prix Barcelony', location: 'Barcelona',
+                date: '2026-06-14', dateRange: '12-14 czerwca', completed: true, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:14.567' },
+                        { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.234' },
+                        { pos: 3, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+0.456' },
+                        { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.678' },
+                        { pos: 5, driver: 'Lando Norris', team: 'McLaren', time: '+0.912' },
+                        { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', time: '+1.123' },
+                        { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.345' },
+                        { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', time: '+1.567' },
+                        { pos: 9, driver: 'Fernando Alonso', team: 'Aston Martin', time: '+1.789' },
+                        { pos: 10, driver: 'Isack Hadjar', team: 'Red Bull', time: '+2.012' }
+                    ],
+                    race: [
+                        { pos: 1, driver: 'Lewis Hamilton', team: 'Ferrari', time: '1:32:28.105' },
+                        { pos: 2, driver: 'George Russell', team: 'Mercedes', time: '+19.561' },
+                        { pos: 3, driver: 'Lando Norris', team: 'McLaren', time: '+23.719' },
+                        { pos: 4, driver: 'Max Verstappen', team: 'Red Bull', time: '+48.123' },
+                        { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', time: '+52.456' },
+                        { pos: 6, driver: 'Pierre Gasly', team: 'Alpine', time: '+1:05.234' },
+                        { pos: 7, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+1:12.789' },
+                        { pos: 8, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1:18.456' },
+                        { pos: 'DNF', driver: 'Kimi Antonelli', team: 'Mercedes', time: 'Silnik' },
+                        { pos: 'DNF', driver: 'Charles Leclerc', team: 'Ferrari', time: 'Hydraulika' }
+                    ]
+                }
+            },
+            {
+                id: 8, round: 8, name: 'Grand Prix Austrii', location: 'Spielberg',
+                date: '2026-06-28', dateRange: '26-28 czerwca', completed: false, hasQualifying: true,
+                sessions: {
+                    qualifying: [
+                        { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:05.679' },
+                        { pos: 2, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.234' },
+                        { pos: 3, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.345' },
+                        { pos: 4, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+0.456' },
+                        { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.567' },
+                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+0.678' },
+                        { pos: 7, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+0.789' },
+                        { pos: 8, driver: 'Franco Colapinto', team: 'Alpine', time: '+0.912' },
+                        { pos: 9, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1.023' },
+                        { pos: 10, driver: 'Ollie Bearman', team: 'Haas', time: '+1.145' }
+                    ],
+                    race: []
+                }
+            }
+        ];
+
+        const standings = [
+            { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', points: 201 },
+            { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', points: 157 },
+            { pos: 3, driver: 'George Russell', team: 'Mercedes', points: 143 },
+            { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', points: 114 },
+            { pos: 5, driver: 'Lando Norris', team: 'McLaren', points: 96 },
+            { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', points: 79 },
+            { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', points: 64 },
+            { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', points: 48 }
+        ];
+
+        let currentRace = null;
+
+        function initRacesList() {
+            const racesList = document.getElementById('racesList');
+            racesList.innerHTML = '';
+            races.forEach(race => {
+                const raceEl = document.createElement('div');
+                const hasData = race.completed || race.hasQualifying;
+                raceEl.className = `race-item ${hasData ? 'completed' : 'upcoming'}`;
+                let badges = '<span class="event-badge qual">K</span>';
+                badges += ' <span class="event-badge race">W</span>';
+                raceEl.innerHTML = `<div class="race-name">${race.name}<div style="display: flex; gap: 5px;">${badges}</div></div><div class="race-date">${race.location} • ${race.dateRange}</div>`;
+                raceEl.onclick = () => showResults(race);
+                racesList.appendChild(raceEl);
+            });
+        }
+
+        function showResults(race) {
+            if (!race.completed && !race.hasQualifying) {
+                alert('Dane tego wyścigu nie są jeszcze dostępne.');
+                return;
+            }
+            currentRace = race;
+            document.getElementById('modalTitle').textContent = race.name;
+            const tabsContainer = document.getElementById('sessionTabs');
+            tabsContainer.innerHTML = '';
+            
+            const btnQual = document.createElement('button');
+            btnQual.className = 'session-tab active';
+            btnQual.textContent = 'Kwalifikacje';
+            btnQual.onclick = (e) => switchSession('qual', e.target);
+            tabsContainer.appendChild(btnQual);
+
+            if (race.sessions.race && race.sessions.race.length > 0) {
+                const btnRace = document.createElement('button');
+                btnRace.className = 'session-tab';
+                btnRace.textContent = 'Wyścig';
+                btnRace.onclick = (e) => switchSession('race', e.target);
+                tabsContainer.appendChild(btnRace);
+            }
+
+            populateTables(race);
+            showModal();
+        }
+
+        function populateTables(race) {
+            const qualTable = document.getElementById('qualTable');
+            qualTable.innerHTML = '<tr><th>Poz.</th><th>Kierowca</th><th>Zespół</th><th>Czas</th></tr>';
+            race.sessions.qualifying.forEach(r => {
+                const row = qualTable.insertRow();
+                row.innerHTML = `<td><strong>${r.pos}</strong></td><td>${r.driver}</td><td>${r.team}</td><td>${r.time}</td>`;
+            });
+
+            if (race.sessions.race && race.sessions.race.length > 0) {
+                const racePodium = document.getElementById('racePodium');
+                racePodium.innerHTML = '';
+                race.sessions.race.filter(r => r.pos !== 'DNF' && r.pos !== 'DNS').slice(0, 3).forEach((r, idx) => {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const pos = document.createElement('div');
+                    pos.className = `podium-position ${['first', 'second', 'third'][idx]}`;
+                    pos.innerHTML = `<div class="medal">${medals[idx]}</div><div class="position-number">${r.pos}</div><div class="driver-name">${r.driver}</div><div class="team-name">${r.team}</div>`;
+                    racePodium.appendChild(pos);
+                });
+
+                const raceTable = document.getElementById('raceTable');
+                raceTable.innerHTML = '<tr><th>Poz.</th><th>Kierowca</th><th>Zespół</th><th>Status</th></tr>';
+                race.sessions.race.forEach(r => {
+                    const row = raceTable.insertRow();
+                    if (r.pos === 'DNF' || r.pos === 'DNS') {
+                        row.innerHTML = `<td class="dnf-cell"><strong>${r.pos}</strong></td><td>${r.driver}</td><td>${r.team}</td><td class="dnf-cell">${r.time}</td>`;
+                    } else {
+                        row.innerHTML = `<td><strong>${r.pos}</strong></td><td>${r.driver}</td><td>${r.team}</td><td>${r.time}</td>`;
+                    }
+                });
+                document.getElementById('raceSession').style.display = 'block';
+            } else {
+                document.getElementById('raceSession').style.display = 'none';
+            }
+        }
+
+        function switchSession(session, button) {
+            document.querySelectorAll('.session-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.session-content').forEach(c => c.classList.remove('active'));
+            button.classList.add('active');
+            if (session === 'qual') document.getElementById('qualSession').classList.add('active');
+            else if (session === 'race') document.getElementById('raceSession').classList.add('active');
+        }
+
+        function showModal() {
+            document.getElementById('resultsModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('resultsModal').classList.remove('active');
+        }
+
+        function switchTab(e, tab) {
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            if (tab === 'results') {
+                document.getElementById('resultsTab').style.display = 'block';
+                document.getElementById('standingsTab').style.display = 'none';
+                showLatestResults();
+            } else {
+                document.getElementById('resultsTab').style.display = 'none';
+                document.getElementById('standingsTab').style.display = 'block';
+                showStandings();
+            }
+        }
+
+        function showLatestResults() {
+            const latestResults = document.getElementById('latestResults');
+            const lastRace = races.filter(r => r.completed).pop();
+            if (lastRace && lastRace.sessions.race.length > 0) {
+                const raceResults = lastRace.sessions.race.filter(r => r.pos !== 'DNF' && r.pos !== 'DNS');
+                latestResults.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #dc0000;">Ostatni Wyścig:</strong>
+                        <div style="font-size: 0.95em; color: #666;">${lastRace.name}</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 2.5em; margin-bottom: 10px;">🏁</div>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #dc0000;">${raceResults[0].driver}</div>
+                        <div style="color: #666;">${raceResults[0].team}</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                            <div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                                <div style="font-size: 0.85em; color: #666;">2. miejsce</div>
+                                <div style="font-weight: bold; margin-top: 5px;">${raceResults[1].driver}</div>
+                            </div>
+                            <div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                                <div style="font-size: 0.85em; color: #666;">3. miejsce</div>
+                                <div style="font-weight: bold; margin-top: 5px;">${raceResults[2].driver}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function showStandings() {
+            const table = document.getElementById('standingsTable');
+            table.innerHTML = '<tr><th>Poz.</th><th>Kierowca</th><th>Zespół</th><th>Punkty</th></tr>';
+            standings.forEach(driver => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td><strong>${driver.pos}</strong></td><td>${driver.driver}</td><td>${driver.team}</td><td class="points">${driver.points}</td>`;
+                table.appendChild(row);
+            });
+        }
+
+        window.addEventListener('load', () => {
+            initRacesList();
+            showLatestResults();
+        });
+
+        window.onclick = (event) => {
+            const modal = document.getElementById('resultsModal');
+            if (event.target === modal) closeModal();
+        };
+    </script>
+</body>
+</html>
