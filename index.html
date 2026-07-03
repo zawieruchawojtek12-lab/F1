@@ -334,34 +334,47 @@
             },
             {
                 id: 8, round: 8, name: 'Grand Prix Austrii', location: 'Spielberg',
-                date: '2026-06-28', dateRange: '26-28 czerwca', completed: false, hasQualifying: true,
+                date: '2026-06-28', dateRange: '26-28 czerwca', completed: true, hasQualifying: true,
                 sessions: {
                     qualifying: [
                         { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:05.679' },
                         { pos: 2, driver: 'Charles Leclerc', team: 'Ferrari', time: '+0.234' },
                         { pos: 3, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+0.345' },
                         { pos: 4, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+0.456' },
-                        { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.567' },
-                        { pos: 6, driver: 'Lando Norris', team: 'McLaren', time: '+0.678' },
-                        { pos: 7, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+0.789' },
-                        { pos: 8, driver: 'Franco Colapinto', team: 'Alpine', time: '+0.912' },
+                        { pos: 5, driver: 'Max Verstappen', team: 'Red Bull', time: '+0.567' },
+                        { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', time: '+0.678' },
+                        { pos: 7, driver: 'Lando Norris', team: 'McLaren', time: '+0.789' },
+                        { pos: 8, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+0.912' },
                         { pos: 9, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1.023' },
                         { pos: 10, driver: 'Ollie Bearman', team: 'Haas', time: '+1.145' }
                     ],
-                    race: []
+                    race: [
+                        { pos: 1, driver: 'George Russell', team: 'Mercedes', time: '1:22:18.547' },
+                        { pos: 2, driver: 'Max Verstappen', team: 'Red Bull', time: '+1.634' },
+                        { pos: 3, driver: 'Kimi Antonelli', team: 'Mercedes', time: '+1.986' },
+                        { pos: 4, driver: 'Oscar Piastri', team: 'McLaren', time: '+18.234' },
+                        { pos: 5, driver: 'Lewis Hamilton', team: 'Ferrari', time: '+22.456' },
+                        { pos: 6, driver: 'Isack Hadjar', team: 'Red Bull', time: '+45.123' },
+                        { pos: 7, driver: 'Lando Norris', team: 'McLaren', time: '+52.789' },
+                        { pos: 8, driver: 'Charles Leclerc', team: 'Ferrari', time: '+1:05.234' },
+                        { pos: 9, driver: 'Liam Lawson', team: 'Racing Bulls', time: '+1:18.456' },
+                        { pos: 10, driver: 'Arvid Lindblad', team: 'Racing Bulls', time: '+1:25.678' },
+                        { pos: 'DNF', driver: 'Sergio Perez', team: 'Cadillac', time: 'Hamulce' },
+                        { pos: 'DNF', driver: 'Valtteri Bottas', team: 'Cadillac', time: 'Pożar' }
+                    ]
                 }
             }
         ];
 
         const standings = [
-            { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', points: 201 },
-            { pos: 2, driver: 'Lewis Hamilton', team: 'Ferrari', points: 157 },
-            { pos: 3, driver: 'George Russell', team: 'Mercedes', points: 143 },
-            { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', points: 114 },
-            { pos: 5, driver: 'Lando Norris', team: 'McLaren', points: 96 },
-            { pos: 6, driver: 'Oscar Piastri', team: 'McLaren', points: 79 },
-            { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', points: 64 },
-            { pos: 8, driver: 'Pierre Gasly', team: 'Alpine', points: 48 }
+            { pos: 1, driver: 'Kimi Antonelli', team: 'Mercedes', points: 171 },
+            { pos: 2, driver: 'George Russell', team: 'Mercedes', points: 131 },
+            { pos: 3, driver: 'Lewis Hamilton', team: 'Ferrari', points: 120 },
+            { pos: 4, driver: 'Charles Leclerc', team: 'Ferrari', points: 104 },
+            { pos: 5, driver: 'Oscar Piastri', team: 'McLaren', points: 85 },
+            { pos: 6, driver: 'Lando Norris', team: 'McLaren', points: 76 },
+            { pos: 7, driver: 'Max Verstappen', team: 'Red Bull', points: 73 },
+            { pos: 8, driver: 'Isack Hadjar', team: 'Red Bull', points: 42 }
         ];
 
         let currentRace = null;
